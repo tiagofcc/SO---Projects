@@ -1,0 +1,25 @@
+.
+├── 120610-125943_RecycleBin
+│   ├── README.md
+│   ├── recycle_bin.sh
+│   ├── screenshots
+│   │   ├── delete_operation.png
+│   │   ├── list_view.png
+│   │   ├── restore_operation.png
+│   │   └── stats_view.png
+│   ├── TECHNICAL_DOC.md
+│   ├── TESTING.md
+│   └── test_suite.sh
+├── Guides
+│   ├── 00_SO-2526_Announcement of Project Proposal.pdf
+│   ├── 01_SO-2526_Complete Project Proposal.pdf
+│   ├── 02_SO-2526_Students Quick Refernce Guide.pdf
+│   ├── 03_SO-2526_Frequently Asked Questions (FAQ).pdf
+│   └── 04_SO-2526_Support Resources.pdf
+├── README.MD
+├── recycle_bin.sh
+├── test_recyclebin.sh
+├── test_suite.sh
+└── treeFile.txt
+
+4 directories, 19 files
