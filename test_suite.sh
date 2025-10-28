@@ -3,10 +3,11 @@
 # Test Suite for Recycle Bin System
 
 # Global Configuration
-RECYCLE_BIN_DIR="$HOME/.recycle_bin"
-FILES_DIR="$RECYCLE_BIN_DIR/files"
-METADATA_FILE="$RECYCLE_BIN_DIR/metadata.db"
+RECYCLE_BIN_DIR="$HOME/.recycle_bin" 
+FILES_DIR="$RECYCLE_BIN_DIR/files" 
+METADATA_FILE="$RECYCLE_BIN_DIR/metadata.db" 
 CONFIG_FILE="$RECYCLE_BIN_DIR/config"
+LOG_FILE="$RECYCLE_BIN_DIR/recycle.log"
 
 SCRIPT="./recycle_bin.sh"
 TEST_DIR="test_data"
@@ -58,7 +59,8 @@ test_initialization() {
     [ -d "$RECYCLE_BIN_DIR" ] && echo "✓ Directory created" || echo "✗ Directory missing"
     [ -d "$FILES_DIR" ] && echo "✓ Files directory created" || echo "✗ Files directory missing"
     [ -f "$METADATA_FILE" ] && echo "✓ Metadata file created" || echo "✗ Metadata file missing"
-    #[ -f "$CONFIG_FILE" ] && echo "✓ Config file created" || echo "✗ Config file missing"
+    [ -f "$CONFIG_FILE" ] && echo "✓ Config file created" || echo "✗ Config file missing"
+    [ -f "$LOG_FILE" ] && echo "✓ Log file created" || echo "✗ Log file missing"
 }
 
 test_delete_file() {

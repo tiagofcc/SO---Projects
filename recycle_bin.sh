@@ -8,10 +8,11 @@
 #################################################
 
 # Global Configuration
-RECYCLE_BIN_DIR="$HOME/.recycle_bin"
-FILES_DIR="$RECYCLE_BIN_DIR/files"
-METADATA_FILE="$RECYCLE_BIN_DIR/metadata.db"
+RECYCLE_BIN_DIR="$HOME/.recycle_bin" 
+FILES_DIR="$RECYCLE_BIN_DIR/files" 
+METADATA_FILE="$RECYCLE_BIN_DIR/metadata.db" 
 CONFIG_FILE="$RECYCLE_BIN_DIR/config"
+LOG_FILE="$RECYCLE_BIN_DIR/recycle.log"
 
 # Color codes for output (optional)
 RED='\033[0;31m'
@@ -28,20 +29,35 @@ METADATA_HEADER_FIELDS="ID ORIGINAL_NAME ORIGINAL_PATH DELETION_DATE FILE_SIZE F
 # Parameters: None
 # Returns: 0 on success, 1 on failure
 #################################################
-initialize_recyclebin() {
-    mkdir -p "$RECYCLE_BIN_DIR"
-    chmod u+rwx "$RECYCLE_BIN_DIR"
-    [[ ! -d "$FILES_DIR" ]] && mkdir -p "$FILES_DIR"
-    [[ ! -f "$METADATA_FILE" ]] && {
-        touch "$METADATA_FILE"
-        echo "# Recycle Bin Metadata" > "$METADATA_FILE"
-        echo $(join_by $METADATA_DELIMITER $METADATA_HEADER_FIELDS) >> "$METADATA_FILE"
-    }
-    #[[ ! -f "$CONFIG_FILE" ]] && {
-    #    echo "MAX_SIZE=104857600" > "$CONFIG_FILE"  # 100 MB default
-    #    echo "AUTO_EMPTY_DAYS=30" >> "$CONFIG_FILE" # 30 days default
-    #}
-    return 0
+initialize_recyclebin() { 
+    if [ ! -d "$RECYCLE_BIN_DIR" ]; then 
+        mkdir -p "$FILES_DIR"
+
+        [[ ! -f "$METADATA_FILE" ]] && {
+        touch "$METADATA_FILE" 
+        echo "# Recycle Bin Metadata" > "$METADATA_FILE" 
+        echo "ID,ORIGINAL_NAME,ORIGINAL_PATH,DELETION_DATE,FILE_SIZE,FILE_TYPE,PERMISSIONS,OWNER" >> "$METADATA_FILE"
+        }
+
+        [[ ! -f "$CONFIG_FILE" ]] && {
+        touch "$CONFIG_FILE"    #criar um config file caso este não exista
+        echo "# Recycle Bin Configuration" > "$CONFIG_FILE"     #dar um cabeçalho tal como no metadata
+        echo 'RECYCLE_BIN_DIR="$HOME/.recycle_bin"' >> "$CONFIG_FILE"    #adicionar ao config o caminho do diretorio do recicle bin
+        echo 'FILES_DIR="$RECYCLE_BIN_DIR/files"' >> "$CONFIG_FILE"    #adicionar ao config o caminho do diretorio files
+        echo 'METADATA_FILE="$RECYCLE_BIN_DIR/metadata.db"' >> "$CONFIG_FILE"    #adicionar ao config o caminho do ficheiro metadata
+        echo "MAX_SIZE_MB=1024" >> "$CONFIG_FILE"   #adicionar ao config o tamaho maximo do ficheiros que podem ir para o recycle bin
+        echo "RETENTION_DAYS=30" >> "$CONFIG_FILE"  #adicionar o tempo limite em que um ficheiro pode ficar dentro do recycle bin
+        echo 'CONFIG_FILE="$RECYCLE_BIN_DIR/config"' >> "$CONFIG_FILE" #adicionar ao config o seu proprio config
+        }
+
+
+        [[ ! -f "$LOG_FILE" ]] && {
+        touch "$LOG_FILE" #cria o ficheiro recyclebin.log vazio caso este não exista
+        }
+        echo -e "${GREEN}Recycle bin initialized at $RECYCLE_BIN_DIR${NC}" #Alteração da função original para a mensagem de sucesso ser verde
+        return 0 
+    fi 
+    return 0 
 }
 
 #################################################

@@ -1,6 +1,11 @@
 #!/bin/bash
 # test_recyclebin.sh - Automated testing script
-RECYCLE_BIN_DIR="$HOME/.recycle_bin"
+RECYCLE_BIN_DIR="$HOME/.recycle_bin" 
+FILES_DIR="$RECYCLE_BIN_DIR/files" 
+METADATA_FILE="$RECYCLE_BIN_DIR/metadata.db" 
+CONFIG_FILE="$RECYCLE_BIN_DIR/config"
+LOG_FILE="$RECYCLE_BIN_DIR/recycle.log"
+
 [[ "$1" == "del" ]] && {
     rm -rf "$RECYCLE_BIN_DIR"
     echo "Recycle bin reset."
