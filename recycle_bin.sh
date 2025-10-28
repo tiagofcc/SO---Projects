@@ -8,11 +8,11 @@
 #################################################
 
 # Global Configuration
-RECYCLE_BIN_DIR="$HOME/.recycle_bin" 
-FILES_DIR="$RECYCLE_BIN_DIR/files" 
-METADATA_FILE="$RECYCLE_BIN_DIR/metadata.db" 
+RECYCLE_BIN_DIR="$HOME/.recycle_bin"
+FILES_DIR="$RECYCLE_BIN_DIR/files"
+METADATA_FILE="$RECYCLE_BIN_DIR/metadata.db"
 CONFIG_FILE="$RECYCLE_BIN_DIR/config"
-LOG_FILE="$RECYCLE_BIN_DIR/recycle.log"
+LOG_FILE="$RECYCLE_BIN_DIR/recyclebin.log"
 
 # Color codes for output (optional)
 RED='\033[0;31m'
@@ -27,37 +27,23 @@ METADATA_HEADER_FIELDS="ID ORIGINAL_NAME ORIGINAL_PATH DELETION_DATE FILE_SIZE F
 # Function: initialize_recyclebin
 # Description: Creates recycle bin directory structure
 # Parameters: None
-# Returns: 0 on success, 1 on failure
+# Returns: 0 on success
 #################################################
-initialize_recyclebin() { 
-    if [ ! -d "$RECYCLE_BIN_DIR" ]; then 
-        mkdir -p "$FILES_DIR"
-
-        [[ ! -f "$METADATA_FILE" ]] && {
-        touch "$METADATA_FILE" 
-        echo "# Recycle Bin Metadata" > "$METADATA_FILE" 
-        echo "ID,ORIGINAL_NAME,ORIGINAL_PATH,DELETION_DATE,FILE_SIZE,FILE_TYPE,PERMISSIONS,OWNER" >> "$METADATA_FILE"
-        }
-
-        [[ ! -f "$CONFIG_FILE" ]] && {
-        touch "$CONFIG_FILE"    #criar um config file caso este não exista
-        echo "# Recycle Bin Configuration" > "$CONFIG_FILE"     #dar um cabeçalho tal como no metadata
-        echo 'RECYCLE_BIN_DIR="$HOME/.recycle_bin"' >> "$CONFIG_FILE"    #adicionar ao config o caminho do diretorio do recicle bin
-        echo 'FILES_DIR="$RECYCLE_BIN_DIR/files"' >> "$CONFIG_FILE"    #adicionar ao config o caminho do diretorio files
-        echo 'METADATA_FILE="$RECYCLE_BIN_DIR/metadata.db"' >> "$CONFIG_FILE"    #adicionar ao config o caminho do ficheiro metadata
-        echo "MAX_SIZE_MB=1024" >> "$CONFIG_FILE"   #adicionar ao config o tamaho maximo do ficheiros que podem ir para o recycle bin
-        echo "RETENTION_DAYS=30" >> "$CONFIG_FILE"  #adicionar o tempo limite em que um ficheiro pode ficar dentro do recycle bin
-        echo 'CONFIG_FILE="$RECYCLE_BIN_DIR/config"' >> "$CONFIG_FILE" #adicionar ao config o seu proprio config
-        }
-
-
-        [[ ! -f "$LOG_FILE" ]] && {
-        touch "$LOG_FILE" #cria o ficheiro recyclebin.log vazio caso este não exista
-        }
-        echo -e "${GREEN}Recycle bin initialized at $RECYCLE_BIN_DIR${NC}" #Alteração da função original para a mensagem de sucesso ser verde
-        return 0 
-    fi 
-    return 0 
+initialize_recyclebin() {
+    mkdir -p "$RECYCLE_BIN_DIR"
+    chmod u+rwx "$RECYCLE_BIN_DIR"
+    [[ ! -d "$FILES_DIR" ]] && mkdir -p "$FILES_DIR"
+    [[ ! -f "$METADATA_FILE" ]] && {
+        touch "$METADATA_FILE"
+        echo "# Recycle Bin Metadata" > "$METADATA_FILE"
+        echo $(join_by $METADATA_DELIMITER $METADATA_HEADER_FIELDS) >> "$METADATA_FILE"
+    }
+    [[ ! -f "$CONFIG_FILE" ]] && {
+        echo "MAX_SIZE=104857600" > "$CONFIG_FILE"  # 100 MB default
+        echo "AUTO_EMPTY_DAYS=30" >> "$CONFIG_FILE" # 30 days default
+    }
+    [[ ! -f "$LOG_FILE" ]] && touch "$LOG_FILE"
+    return 0
 }
 
 #################################################
@@ -76,7 +62,7 @@ generate_unique_id() {
 # Function: delete_file
 # Description: Moves file/directory to recycle bin
 # Parameters: $1 - path to file/directory
-# Returns: 0 on success
+# Returns: 0 on success, 1 on failure
 #################################################
 delete_file() {
     # Validate input
@@ -92,19 +78,34 @@ delete_file() {
             echo -e "${RED}Error: File '$file' does not exist${NC}"
             continue
         fi
+        # Prevent deleting from recycle bin itself
         if [[ "$file" == "$RECYCLE_BIN_DIR"* ]]; then
             echo -e "${YELLOW}Warning: Cannot delete files from recycle bin itself: '$file'${NC}"
             continue
         fi
-        # TODO: check permissions to delete
-        # TODO: check filesize against config MAX_SIZE
+        # Get metadata
         local metadata=$(get_metadata "$file")
-        local id=$(echo "$metadata" | cut -d$METADATA_DELIMITER -f1)
-        move_to_recycle_bin "$file" "$id" || continue
+        IFS="$METADATA_DELIMITER" read -r ID ORIGINAL_NAME ORIGINAL_PATH DELETION_DATE FILE_SIZE FILE_TYPE PERMISSIONS OWNER <<< "$metadata"
+        # Check permissions
+        local parent_dir=$(dirname "${ORIGINAL_PATH%/}")
+        [ ! -w "$parent_dir" ] || [ ! -x "$parent_dir" ] && {
+            echo -e "${RED}Error: No permissions in parent directory '$parent_dir'${NC}"
+            continue
+        }
+        # Check recycle bin size limit
+        (( $(get_current_size + FILE_SIZE) > $(get_config "MAX_SIZE") )) && {
+            echo -e "${RED}Error: Recycle bin cannot receive '$file', otherwise it would exceed maximum allowed size${NC}"
+            continue
+        }
+        move_to_recycle_bin "$file" "$ID" || continue
         update_metadata "$metadata" || continue
         num_files_deleted=$((num_files_deleted + 1))
 
     done
+    if ((num_files_deleted == 0)); then
+        echo -e "${RED}No files were moved to recycle bin.${NC}"
+        return 1
+    fi
     echo -e "${GREEN}$num_files_deleted/$total_files file(s) moved to recycle bin successfully.${NC}"
 }
 
@@ -121,15 +122,28 @@ list_recycled() {
     fi
 
     echo "=== Recycle Bin Contents ==="
-
-    # Your code here
-
-    printf "%-20s %-40s %-20s %-10s\n" "ID" "ORIGINAL NAME" "DELETION DATE" "SIZE"
+        printf "%s\n" "-------------------------------------------------------------------------------------------------------------------------------"
+    if [ "$1" == "--detailed" ]; then
+        tail -n +3 "$METADATA_FILE" | while IFS="$METADATA_DELIMITER" read -r ID ORIGINAL_NAME ORIGINAL_PATH DELETION_DATE FILE_SIZE FILE_TYPE PERMISSIONS OWNER; do
+            echo "ID: $ID"
+            echo "ORIGINAL_NAME: $ORIGINAL_NAME"
+            echo "ORIGINAL_PATH: ORIGINAL_PATH"
+            echo "DELETION_DATE: $DELETION_DATE"
+            echo "FILE_SIZE: $(human_readable_size "$FILE_SIZE")"
+            echo "FILE_TYPE: $FILE_TYPE"
+            echo "PERMISSIONS: $PERMISSIONS"
+            echo "OWNER: $OWNER"
+            echo ""
+        done
+    else
+        printf "%-20s %-40s %-20s %-10s\n" "ID" "ORIGINAL NAME" "DELETION DATE" "SIZE"
+        tail -n +3 "$METADATA_FILE" | while IFS="$METADATA_DELIMITER" read -r ID ORIGINAL_NAME ORIGINAL_PATH DELETION_DATE FILE_SIZE FILE_TYPE PERMISSIONS OWNER; do
+            printf "%-20s %-40s %-20s %-10s\n" "$ID" "$ORIGINAL_NAME" "$DELETION_DATE" "$(human_readable_size "$FILE_SIZE")"
+        done
+    fi
     printf "%s\n" "--------------------------------------------------------------------------------"
-    
-    tail -n +3 "$METADATA_FILE" | while IFS="$METADATA_DELIMITER" read -r ID ORIGINAL_NAME ORIGINAL_PATH DELETION_DATE FILE_SIZE FILE_TYPE PERMISSIONS OWNER; do
-        printf "%-20s %-40s %-20s %-10s\n" "$ID" "$ORIGINAL_NAME" "$DELETION_DATE" "$FILE_SIZE"
-    done
+    echo "Total items: $(( $(wc -l < "$METADATA_FILE") - 2 ))"
+    echo "Storage used: $(human_readable_size $(get_current_size))/$(human_readable_size $(get_config "MAX_SIZE"))"
     return 0
 }
 
@@ -140,22 +154,55 @@ list_recycled() {
 # Returns: 0 on success, 1 on failure
 #################################################
 restore_file() {
-    # TODO: Implement this function
     local file_id="$1"
-
-    if [ -z "$file_id" ]; then
+    echo "Restore function called with ID: $file_id"
+    [ -z "$file_id" ] && {
         echo -e "${RED}Error: No file ID specified${NC}"
         return 1
-    fi
-    return 1
-    # Your code here
-
-    # Hint: Search metadata for matching ID
-    # Hint: Get original path from metadata
-    # Hint: Check if original path exists
-    # Hint: Move file back and restore permissions
-    # Hint: Remove entry from metadata
-
+    }
+    
+    # Search metadata for matching ID
+    local metadata_line=$(cat "$METADATA_FILE" | grep "$file_id") 
+    echo "$metadata_line"
+    [ -z "$metadata_line" ] && {
+        echo -e "${RED}Error: No file with ID '$file_id' found in recycle bin${NC}"
+        return 1
+    }
+    # Get original path from metadata
+    IFS="$METADATA_DELIMITER" read -r ID ORIGINAL_NAME ORIGINAL_PATH DELETION_DATE FILE_SIZE FILE_TYPE PERMISSIONS OWNER <<< "$metadata_line"
+    [ -z "$ORIGINAL_PATH" ] && {
+        echo -e "${RED}Error: Couldn't get metadata of file with ID '$file_id'${NC}"
+        return 1
+    }
+    # Check if original path exists
+    dir_path=$(dirname "$ORIGINAL_PATH")
+    [ ! -d "$dir_path" ] && {
+        mkdir -p "$dir_path"
+    }
+    chmod u+rwx "$dir_path"
+    # Move file back to original path
+    [ -e "$ORIGINAL_PATH" ] && {
+        echo -e "${YELLOW}Warning: Original path '$ORIGINAL_PATH' already exists.${NC}"
+        echo -n "Do you want to overwrite?"
+        confirm_action && {
+            echo "Restore cancelled."
+            return 1
+        }
+    }
+    mv "$FILES_DIR/$file_id" "$ORIGINAL_PATH" || {
+        echo -e "${RED}Error: Failed to restore file to '$ORIGINAL_PATH'${NC}"
+        return 1
+    }
+    # Restore original permissions
+    chmod "$PERMISSIONS" "$ORIGINAL_PATH"
+    # Remove entry from metadata
+    grep -v "^$file_id$" "$METADATA_FILE" > "$METADATA_FILE.temp"
+    mv "$METADATA_FILE.temp" "$METADATA_FILE"
+    [ $(grep -c "^$file_id$" "$METADATA_FILE") -ne 0 ] && {
+        echo -e "${RED}Error: Failed to update metadata after restoring file${NC}"
+        return 1
+    }
+    echo -e "${GREEN}File restored to '$ORIGINAL_PATH' successfully.${NC}"
     return 0
 }
 
@@ -204,19 +251,24 @@ SYNOPSIS:
     $0 [OPTION] [ARGUMENTS]
 
 OPTIONS:
-    delete <file>       Move file/directory to recycle bin
-    list                List all items in recycle bin
-    restore <id>        Restore file by ID
-    search <pattern>    Search for files by name
-    empty               Empty recycle bin permanently
-    help                Display this help message
+    delete <file> <...files>    Move file/directory to recycle bin
+    list                        List all items in recycle bin
+    restore <id>                Restore file by ID
+    search <pattern>            Search for files by name
+    empty                       Empty recycle bin permanently
+    help|-h|--help              Display this help message
 
 EXAMPLES:
-    $0 delete myfile.txt
+    $0 delete myfile.txt anotherfile.txt
     $0 list
     $0 restore 1696234567_abc123
     $0 search "*.pdf"
     $0 empty
+    $0 -h
+
+CONFIGURATION:
+    Configuration file is located at: $CONFIG_FILE
+    You can edit MAX_SIZE and AUTO_EMPTY_DAYS parameters there.
 
 EOF
     return 0
@@ -239,7 +291,7 @@ main() {
             delete_file "$@"
             ;;
         list)
-            list_recycled
+            list_recycled "$2"
             ;;
         restore)
             restore_file "$2"
@@ -267,7 +319,6 @@ main() {
 # Returns: 0 on success
 #################################################
 # reset_metadata() {
-#     touch "$METADATA_FILE"
 #     echo "# Recycle Bin Metadata" > "$METADATA_FILE"
 #     echo "ID,ORIGINAL_NAME,ORIGINAL_PATH,DELETION_DATE,FILE_SIZE,FILE_TYPE,PERMISSIONS,OWNER" >> "$METADATA_FILE"
 #     return 0
@@ -288,15 +339,16 @@ get_metadata() {
     ORIGINAL_PATH=$(realpath "$file")
     DELETION_DATE=$(date "+%Y-%m-%d %H:%M:%S")
     FILE_SIZE=$(stat -c %s "$file")
-    [ -d "$file" ] && FILE_SIZE=$(du -sb "$file" | cut -f1)
+    [ -d "$file" ] && FILE_SIZE=$(du -sb "$file" | awk '{print $1}') || 
     FILE_TYPE="f"
     [ -d "$file" ] && FILE_TYPE="d"
     PERMISSIONS=$(stat -c "%a" "$file")
     OWNER=$(stat -c %U:%G "$file")
 
+    # TODO: Use arrays
     echo $(join_by "$METADATA_DELIMITER" "$ID" "$ORIGINAL_NAME" "$ORIGINAL_PATH" "$DELETION_DATE" "$FILE_SIZE" "$FILE_TYPE" "$PERMISSIONS" "$OWNER")
     return 0
-}
+
 
 #################################################
 # Function: move_to_recycle_bin
@@ -345,6 +397,66 @@ join_by() {
   fi
 }
 # Reference: https://stackoverflow.com/questions/1527049/how-can-i-join-elements-of-a-bash-array-into-a-delimited-string#17841619
+
+
+#################################################
+# Function: confirm_action
+# Description: (Helper) Prompts user for confirmation
+# Parameters: None
+# Returns: 0 if confirmed, 1 otherwise
+#################################################
+confirm_action() { 
+    read -p " (y/n): " choice 
+    case "$choice" in 
+        y|Y|yes|YES) return 0 ;; 
+        *) return 1 ;; 
+    esac 
+}
+
+#################################################
+# Function: get_current_size
+# Description: (Helper) Get current size of recycle bin
+# Parameters: None
+# Returns: Prints size in bytes to stdout
+#################################################
+get_current_size() {
+    local total_size=0
+    while read -r line; do
+        IFS="$METADATA_DELIMITER" read -r ID ORIGINAL_NAME ORIGINAL_PATH DELETION_DATE FILE_SIZE FILE_TYPE PERMISSIONS OWNER <<< "$line"
+        total_size=$((total_size + FILE_SIZE))
+    done < <(tail -n +3 "$METADATA_FILE")
+    echo "$total_size"
+}
+
+#################################################
+# Function: get_config
+# Description: (Helper) Get configuration value
+# Parameters: $1 - config key
+# Returns: Prints config value to stdout
+#################################################
+get_config() {
+    local key="$1"
+    echo $(grep "^$key=" "$CONFIG_FILE" | cut -d'=' -f2)
+}
+
+#################################################
+# Function: human_readable_size
+# Description: (Helper) Convert bytes to human-readable format
+# Parameters: $1 - size in bytes
+# Returns: Prints human-readable size to stdout
+#################################################
+human_readable_size() {
+    local size=$1
+    if [ "$size" -lt 1024 ]; then
+        printf "%3d B " "$size"
+    elif [ "$size" -lt $((1024**2)) ]; then
+        printf "%3d KB" $((size / 1024))
+    elif [ "$size" -lt $((1024**3)) ]; then
+        printf "%3d MB" $((size / 1024**2))
+    else
+        printf "%3d GB" $((size / 1024**3))
+    fi
+}
 
 # Execute main function with all arguments
 main "$@"

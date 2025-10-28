@@ -1,11 +1,6 @@
 #!/bin/bash
 # test_recyclebin.sh - Automated testing script
-RECYCLE_BIN_DIR="$HOME/.recycle_bin" 
-FILES_DIR="$RECYCLE_BIN_DIR/files" 
-METADATA_FILE="$RECYCLE_BIN_DIR/metadata.db" 
-CONFIG_FILE="$RECYCLE_BIN_DIR/config"
-LOG_FILE="$RECYCLE_BIN_DIR/recycle.log"
-
+RECYCLE_BIN_DIR="$HOME/.recycle_bin"
 [[ "$1" == "del" ]] && {
     rm -rf "$RECYCLE_BIN_DIR"
     echo "Recycle bin reset."
@@ -28,7 +23,7 @@ echo "Sample content 00" > test_data/file1.txt
 echo "Sample content 000" > test_data/file2.txt
 echo "Sample content 0000" > 'test_data/file!@#$%^&*.txt'
 mkdir test_data/subdir
-echo {0..9}{0..9}{0..9}{0..9} > test_data/subdir/file3.txt
+echo {0..9999} > test_data/subdir/file3.txt
 echo {0..9}{0..9}{0..9}{0..9} > test_data/subdir/file4.txt
 echo {0..9}{0..9}{0..9}{0..9} > test_data/subdir/file5.txt
 echo -e "________Test 2 Complete________"

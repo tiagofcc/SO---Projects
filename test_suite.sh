@@ -3,11 +3,10 @@
 # Test Suite for Recycle Bin System
 
 # Global Configuration
-RECYCLE_BIN_DIR="$HOME/.recycle_bin" 
-FILES_DIR="$RECYCLE_BIN_DIR/files" 
-METADATA_FILE="$RECYCLE_BIN_DIR/metadata.db" 
+RECYCLE_BIN_DIR="$HOME/.recycle_bin"
+FILES_DIR="$RECYCLE_BIN_DIR/files"
+METADATA_FILE="$RECYCLE_BIN_DIR/metadata.db"
 CONFIG_FILE="$RECYCLE_BIN_DIR/config"
-LOG_FILE="$RECYCLE_BIN_DIR/recycle.log"
 
 SCRIPT="./recycle_bin.sh"
 TEST_DIR="test_data"
@@ -60,7 +59,6 @@ test_initialization() {
     [ -d "$FILES_DIR" ] && echo "✓ Files directory created" || echo "✗ Files directory missing"
     [ -f "$METADATA_FILE" ] && echo "✓ Metadata file created" || echo "✗ Metadata file missing"
     [ -f "$CONFIG_FILE" ] && echo "✓ Config file created" || echo "✗ Config file missing"
-    [ -f "$LOG_FILE" ] && echo "✓ Log file created" || echo "✗ Log file missing"
 }
 
 test_delete_file() {
@@ -69,16 +67,58 @@ test_delete_file() {
     echo "test content" > "$TEST_DIR/test.txt"
     $SCRIPT delete "$TEST_DIR/test.txt" > /dev/null
     assert_success "Delete existing file"
-    [ ! -f "$TEST_DIR/test.txt" ] && echo "✓ File removed from original location"
+    [ ! -f "$TEST_DIR/test.txt" ] && echo "✓ File removed from original location" || echo "✗ File still exists in original location"
+}
+
+test_delete_100_files() {
+    echo -e "\n_______ Test: Delete 100 Files _______"
+    setup > /dev/null
+    for i in {1..100}; do
+        echo "$i {0..500}" > "$TEST_DIR/file$i.txt"
+    done
+    $SCRIPT delete "$TEST_DIR"/file1.txt "$TEST_DIR/file"{2..100}.txt > /dev/null
+    assert_success "Delete 100 files"
+    for i in {1..100}; do
+        [ ! -f "$TEST_DIR/file$i.txt" ] || { echo "✗ File file$i.txt still exists"; return; }
+    done
+    echo "✓ All 100 files removed from original location"
+}
+
+test_delete_empty_directory() {
+    echo -e "\n_______ Test: Delete Empty Directory _______"
+    setup > /dev/null
+    mkdir -p "$TEST_DIR/empty_dir"
+    $SCRIPT delete "$TEST_DIR/empty_dir" > /dev/null
+    assert_success "Delete empty directory"
+    [ ! -d "$TEST_DIR/empty_dir" ] && echo "✓ Directory removed from original location" || echo "✗ Directory still exists in original location"
+}
+
+test_delete_directory_with_files() {
+    echo -e "\n_______ Test: Delete Directory with Files _______"
+    setup > /dev/null
+    mkdir -p "$TEST_DIR/dir_with_files"
+    for i in {1..10}; do
+        echo "content $i" > "$TEST_DIR/dir_with_files/file$i.txt"
+    done
+    $SCRIPT delete "$TEST_DIR/dir_with_files" > /dev/null
+    assert_success "Delete directory with files"
+    [ ! -d "$TEST_DIR/dir_with_files" ] && echo "✓ Directory removed from original location" || echo "✗ Directory still exists in original location"
+}
+
+test_delete_nonexistent_file() {
+    echo -e "\n_______ Test: Delete Non-existent File _______"
+    setup > /dev/null
+    $SCRIPT delete "$TEST_DIR/nonexistent.txt" > /dev/null
+    assert_fail "Delete non-existent file"
 }
 
 test_list_empty() {
     echo -e "\n_______ Test: List Empty Bin _______"
     setup > /dev/null
-    [[ $($SCRIPT list | tail -n 1) == "Recycle bin is empty" ]]
+    [[ $($SCRIPT list | head -n 1) == "Recycle bin is empty" ]]
     assert_success "List empty recycle bin"
-    [ $(wc -l < "$METADATA_FILE") -le 2 ] && echo "✓ Metadata file is empty" #
-    [ $(ls -A "$FILES_DIR" 2>/dev/null | wc -l) -eq 0 ] && echo "✓ Files directory is empty" #
+    [ $(wc -l < "$METADATA_FILE") -le 2 ] && echo "✓ Metadata file is empty" || echo "✗ Metadata file not empty"
+    [ $(ls -A "$FILES_DIR" | wc -l) -eq 0 ] && echo "✓ Files directory is empty" || echo "✗ Files directory not empty"
 }
 
 test_restore_file() {
@@ -89,10 +129,29 @@ test_restore_file() {
 
     # Get file ID from list
     ID=$($SCRIPT list | grep "restore_test" | awk '{print $1}')
-    $SCRIPT restore "$ID"
+    $SCRIPT restore "$ID" > /dev/null
     assert_success "Restore file"
-    [ -f "$TEST_DIR/restore_test.txt" ] && echo "✓ File restored"
+    [ -f "$TEST_DIR/restore_test.txt" ] && echo "✓ File restored" || echo "✗ File not restored"
 }
+
+test_restore_to_nonexistent_directory() {
+    echo -e "\n_______ Test: Restore to Non-existent Directory _______"
+    setup > /dev/null
+    mkdir -p "$TEST_DIR/restore_nonexistent"
+    echo "test" > "$TEST_DIR/restore_nonexistent/test.txt"
+    $SCRIPT delete "$TEST_DIR/restore_nonexistent/test.txt" > /dev/null
+
+    # Remove original directory
+    rm -rf "$TEST_DIR/restore_nonexistent"
+
+    # Get file ID from list
+    ID=$($SCRIPT list | grep "test.txt" | awk '{print $1}')
+    $SCRIPT restore "$ID" > /dev/null
+    assert_success "Restore file to non-existent directory"
+    [ -d "$TEST_DIR/restore_nonexistent" ] && echo "✓ Original directory recreated" || echo "✗ Original directory not recreated"
+    [ -f "$TEST_DIR/restore_nonexistent/test.txt" ] && echo "✓ File restored to new directory" || echo "✗ File not restored to new directory"
+}
+
 
 # Run all tests
 echo "========================================="
@@ -101,8 +160,12 @@ echo "========================================="
 
 test_initialization
 test_delete_file
+#test_delete_100_files # time the execution
+test_delete_empty_directory
+test_delete_nonexistent_file
 test_list_empty
 test_restore_file
+test_restore_to_nonexistent_directory
 
 # Add more test functions here
 
