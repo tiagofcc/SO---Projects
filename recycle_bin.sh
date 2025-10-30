@@ -348,6 +348,7 @@ get_metadata() {
     # TODO: Use arrays
     echo $(join_by "$METADATA_DELIMITER" "$ID" "$ORIGINAL_NAME" "$ORIGINAL_PATH" "$DELETION_DATE" "$FILE_SIZE" "$FILE_TYPE" "$PERMISSIONS" "$OWNER")
     return 0
+}
 
 
 #################################################
