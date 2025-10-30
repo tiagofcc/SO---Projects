@@ -117,7 +117,7 @@ test_delete_directory_with_files #5
 test_list_empty_bin() {
     echo -e "\n_______ Test: List Empty Bin _______"
     setup > /dev/null
-    $SCRIPT list | head -n 1
+    $SCRIPT list | head -n 1 > /dev/null
     [[ $($SCRIPT list | head -n 1) == "Recycle bin is empty" ]]
     assert_success "List empty recycle bin"
     [ $(wc -l < "$METADATA_FILE") -le 2 ] && echo "✓ Metadata file is empty" || echo "✗ Metadata file not empty"

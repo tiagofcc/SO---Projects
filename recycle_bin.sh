@@ -2,7 +2,8 @@
 
 #################################################
 # Linux Recycle Bin Simulation
-# Author: [Your Name]
+# Author: João Pedro Silva -120610
+# Author: Tiago Francisco Costa - 125943
 # Date: [Date]
 # Description: Shell-based recycle bin system
 #################################################
@@ -14,7 +15,6 @@ METADATA_FILE="$RECYCLE_BIN_DIR/metadata.db"
 CONFIG_FILE="$RECYCLE_BIN_DIR/config"
 LOG_FILE="$RECYCLE_BIN_DIR/recyclebin.log"
 SCRIPT="$0"
-# TODO: date --date='30 days ago' "+%Y-%m-%d %H:%M:%S" # gets date 30 days ago
 # TODO: review function parameters and return values
 
 # Color codes for output (optional)
@@ -82,7 +82,6 @@ auto_cleanup() {
     return 0
 }
 
-
 #################################################
 # Function: generate_unique_id
 # Description: Generates unique ID for deleted files
@@ -98,12 +97,13 @@ generate_unique_id() {
 #################################################
 # Function: delete_file
 # Description: Moves file/directory to recycle bin
-# Parameters: $1 - path to file/directory
-# Returns: 0 on success, 1 on failure
+# Parameters: $@ - paths to file/directory
+# Returns: 0 on success, 1 when no files deleted
 #################################################
 delete_file() {
     # Validate input
-    if (($# < 1)); then
+    echo "Delete function called with arguments: $@"
+    if (($# == 0)); then
         echo -e "${RED}Error: No file(s) specified${NC}"
         return 1
     fi
@@ -111,13 +111,18 @@ delete_file() {
     local total_files=$#
     for file in "$@"; do
         # Check if file exists
-        if [ ! -e "$file" ]; then
+        [ ! -e "$file" ] && {
             echo -e "${RED}Error: File '$file' does not exist${NC}"
             continue
-        fi
+        }
         # Prevent deleting from recycle bin itself
-        if [[ "$file" == "$RECYCLE_BIN_DIR"* ]]; then
+        if [[ "$(realpath "$file")" == "$(realpath "$RECYCLE_BIN_DIR")"* ]]; then
             echo -e "${YELLOW}Warning: Cannot delete files from recycle bin itself: '$file'${NC}"
+            continue
+        fi
+        # Prevent deleting script itself
+        if [ "$(realpath "$file")" == "$(realpath "$SCRIPT")" ]; then
+            echo -e "${YELLOW}Warning: Cannot delete the recycle bin script itself: '$file'${NC}"
             continue
         fi
         # Get metadata
@@ -151,7 +156,6 @@ delete_file() {
         echo -e "${RED}No files were moved to recycle bin.${NC}"
         return 1
     fi
-
     echo -e "${GREEN}$num_files_deleted/$total_files file(s) moved to recycle bin successfully.${NC}"
     return 0
 }
@@ -235,7 +239,7 @@ restore_file() {
         echo -e "${YELLOW}Warning: Original path '$original_path' already exists.${NC}"
         echo -n "Do you want to overwrite?"
         #TODO: Add change name option
-        confirm_action && {
+        confirm_action || {
             echo "Restore cancelled."
             return 1
         }
@@ -251,7 +255,7 @@ restore_file() {
     # Remove entry from metadata
     grep -v "$file_id" "$METADATA_FILE" > "$METADATA_FILE.temp"
     mv "$METADATA_FILE.temp" "$METADATA_FILE"
-    [ $(grep -c "^$file_id$" "$METADATA_FILE") -ne 0 ] && {
+    [ $(grep -c "^$file_id" "$METADATA_FILE") -ne 0 ] && {
         echo -e "${RED}Error: Failed to update metadata after restoring file${NC}"
         return 1
     }
@@ -285,96 +289,44 @@ empty_recyclebin() {
         fi
     done
 
-    if [ -z "$id" ]; then # verify if id is empty
-        if [ "$force" == "true" ]; then # verify if force --force was used as argument
-            rm -rf "$FILES_DIR"/* # removes all files in the recycle bin files dir
-
-            local deleted_files=$(tail "$METADATA_FILE" -n +2 | cut -d"$METADATA_DELIMITER" -f2) # get all the deleted files names from the matadata file
-
-            echo "# Recycle Bin Metadata" > "$METADATA_FILE"
-            echo $(join_by "$METADATA_DELIMITER" $METADATA_HEADER_FIELDS) >> "$METADATA_FILE" # delete all metadata info and adds the default header
-
-            
-            echo -e "${GREEN}Files/Directories deleted:${NC}"
-            echo "$deleted_files" # prints the names of all the deleted files
-
-            echo -e "${GREEN}Recycle bin successfully emptied.${NC}" # success message
-            return 0
-
-        else # without --force argument
-            echo -e "${YELLOW}Warning!!! Are you sure you want to delete all contents of the Recycle bin?${NC}\nType 'Y' to confirm:"
-            read -p "" confirmation
-
-            confirmation="${confirmation^^}" #converts case to uppercase"
-
-            if [ "$confirmation" != "Y" ]; then # if user didn't confirm with Y
-                echo -e "${RED}Operation cancelled by the user.${NC}"
-                return 1              
-            fi
-
-            # proceed if user wrote Y
-            rm -rf "$FILES_DIR"/*
-
-            deleted_files=$(tail "$METADATA_FILE" -n +2 | cut -d"$METADATA_DELIMITER" -f2)
-
-            echo "# Recycle Bin Metadata" > "$METADATA_FILE"
-            echo $(join_by $METADATA_DELIMITER $METADATA_HEADER_FIELDS) >> "$METADATA_FILE"
-
-            echo -e "${GREEN}Files/Directories deleted:${NC}"
-            echo "$deleted_files"
-
-            echo -e "${GREEN}Recycle bin successfully emptied.${NC}"
-            return 0
-        fi
-
-    else # if id is not empty
-        if [ "$force" == "true" ]; then # with --force argument
-            file_path="$FILES_DIR/$id" # path to the file/directory of the passed id
-
-            if [ -f "$file_path" ] || [ -d "$file_path" ]; then # verify if file/directory exists in  files dir
-                rm -rf "$file_path"
-
-                deleted_file=$(grep "^$id$METADATA_DELIMITER" "$METADATA_FILE" | cut -d"$METADATA_DELIMITER" -f2) # get the original file's name by using the id as the search for the line and choosing the 2nd field
-
-                grep -v "^$id$METADATA_DELIMITER" "$METADATA_FILE" > "$METADATA_FILE.tmp" # remove only the line with the passed id from the metadata and saving it to a temporary file
-                mv "$METADATA_FILE.tmp" "$METADATA_FILE" # replace the old metadata with the new temporary file
-
-                echo -e "${GREEN}File/Directory deleted:${NC}" 
-                echo "$deleted_file"
-                return 0
-            else
-                echo -e "${RED}Error: No file with id '$id' found in recycle bin${NC}"
-                return 1
-            fi
-        else
-            echo -e "${YELLOW}Warning!!! Are you sure you want to delete this file/directory of the Recycle bin?${NC}\nType 'Y' to confirm:"
-            read -p "" confirmation
-            confirmation="${confirmation^^}"
-
-            if [ "$confirmation" != "Y" ]; then
-                echo -e "${RED}Operation cancelled by the user.${NC}"
-                return 1
-            fi
-
-            file_path="$FILES_DIR/$id"
-            if [ -f "$file_path" ] || [ -d "$file_path" ]; then
-                rm -rf "$file_path"
-
-                deleted_file=$(grep "^$id$METADATA_DELIMITER" "$METADATA_FILE" | cut -d"$METADATA_DELIMITER" -f2)
-
-                grep -v "^$id$METADATA_DELIMITER" "$METADATA_FILE" > "$METADATA_FILE.tmp"
-                mv "$METADATA_FILE.tmp" "$METADATA_FILE"
-
-                echo -e "${GREEN}File/Directory deleted:${NC} "
-                echo "$deleted_file"
-                return 0
-            else
-                echo -e "${RED}Error: No file with id '$id' found in recycle bin${NC}"
-                return 1
-            fi
-
+    # Check if specific ID was provided
+    if [ -n "$id" ]; then
+        file_path="$FILES_DIR/$id"
+        if [ ! -e "$file_path" ]; then
+            echo -e "${RED}Error: No file with id '$id' found in recycle bin${NC}"
+            return 1
         fi
     fi
+
+    # Ask for confirmation unless --force is used
+    if [ "$force" != "true" ]; then
+        echo -e "${YELLOW}Warning!!! Are you sure you want to delete ${id:+this file/directory from}${id:-all contents of} the Recycle bin?${NC}\nType 'Y' to confirm:"
+        read -r confirmation
+        if [ "${confirmation^^}" != "Y" ]; then
+            echo -e "${RED}Operation cancelled by the user.${NC}"
+            return 1
+        fi
+    fi
+
+    if [ -n "$id" ]; then
+        # Delete specific file
+        deleted_file=$(grep "^$id" "$METADATA_FILE" | cut -d"$METADATA_DELIMITER" -f2)
+        rm -rf "$file_path"
+        grep -v "^$id" "$METADATA_FILE" > "$METADATA_FILE.tmp"
+        mv "$METADATA_FILE.tmp" "$METADATA_FILE"
+        echo -e "${GREEN}File/Directory deleted:${NC}"
+        echo "$deleted_file"
+    else
+        # Delete all files
+        deleted_files=$(tail -n +3 "$METADATA_FILE" | cut -d"$METADATA_DELIMITER" -f2)
+        rm -rf "$FILES_DIR"/*
+        echo "# Recycle Bin Metadata" > "$METADATA_FILE"
+        echo "$(join_by "$METADATA_DELIMITER" $METADATA_HEADER_FIELDS)" >> "$METADATA_FILE"
+        echo -e "${GREEN}Files/Directories deleted:${NC}"
+        echo "$deleted_files"
+        echo -e "${GREEN}Recycle bin successfully emptied.${NC}"
+    fi
+    return 0
 
     return 1
 }
@@ -462,24 +414,25 @@ main() {
     # Initialize recycle bin
     initialize_recyclebin
 
+    local command="$1"
+    [ -z "$command" ] && command="help"
+    shift
+
     # Parse command line arguments
-    case "$1" in
+    case "$command" in
         delete)
-            shift
             delete_file "$@"
             ;;
         list)
-            list_recycled "$2"
+            list_recycled "$@"
             ;;
         restore)
-            restore_file "$2"
+            restore_file "$@"
             ;;
         search)
-            shift
             search_recycled "$@"
             ;;
         empty)
-            shift
             empty_recyclebin "$@"
             ;;
         help|--help|-h)
@@ -491,18 +444,6 @@ main() {
             ;;
     esac
 }
-
-#################################################
-# Function: reset_metadata
-# Description: (Helper) Resets metadata.db file
-# Parameters: None
-# Returns: 0 on success
-#################################################
-# reset_metadata() {
-#     echo "# Recycle Bin Metadata" > "$METADATA_FILE"
-#     echo $(join_by "$METADATA_DELIMITER" $METADATA_HEADER_FILES) >> "$METADATA_FILE"
-#     return 0
-# }
 
 #################################################
 # Function: get_metadata
@@ -595,7 +536,7 @@ confirm_action() {
 
 #################################################
 # Function: get_log
-# Description: (Helper) Get
+# Description: (Helper) Get log entry
 # Parameters: None
 # Returns: prints log 
 #################################################
@@ -615,10 +556,10 @@ get_current_size() {
     local total_size=0
     tail -n +3 "$METADATA_FILE" | while read -r line; do
         IFS="$METADATA_DELIMITER" read -r id original_name original_path deletion_date file_size file_type permissions owner <<< "$line"
-        total_size=$((total_size + $file_size))
+        total_size=$(($total_size + $file_size))
     done
     echo "$total_size"
-}$@"
+}
 
 #################################################
 # Function: get_config
