@@ -22,16 +22,19 @@ echo "Sample content 0" > test_data/file0.txt
 echo "Sample content 00" > test_data/file1.txt
 echo "Sample content 000" > test_data/file2.txt
 echo "Sample content 0000" > 'test_data/file!@#$%^&*.txt'
+echo "Sample content 00000" > test_data/file_with_a_super_large_name.txt
 mkdir test_data/subdir
 echo {0..9999} > test_data/subdir/file3.txt
 echo {0..9}{0..9}{0..9}{0..9} > test_data/subdir/file4.txt
 echo {0..9}{0..9}{0..9}{0..9} > test_data/subdir/file5.txt
 echo -e "________Test 2 Complete________"
 
+
 # Test 3: Delete files
 echo -e "\n________Test 3: Deleting files________"
 ./recycle_bin.sh delete test_data/file0.txt
 ./recycle_bin.sh delete test_data/file1.txt test_data/file2.txt test_data/file3.txt 'test_data/file!@#$%^&*.txt'
+./recycle_bin.sh delete test_data/file_with_a_super_large_name.txt
 ./recycle_bin.sh delete test_data/subdir
 echo -e "________Test 3 Complete________"
 
