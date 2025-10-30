@@ -47,8 +47,9 @@ initialize_recyclebin() {
         echo "# Recycle Bin Metadata" > "$METADATA_FILE"
         echo $(join_by $METADATA_DELIMITER $METADATA_HEADER_FIELDS) >> "$METADATA_FILE"
     }
-    [[ ! -f "$LOG_FILE" ]] && touch "$LOG_FILE"
-    #[[ $(get_config "AUTO_CLEANUP_STATUS") == "ON" ]] && auto_cleanup
+
+    [[ ! -f "$LOG_FILE" ]] && get_log "initialize_recyclebin - Recycle Bin initialized."
+    [[ $(get_config "AUTO_CLEANUP_STATUS") == "ON" ]] && auto_cleanup
     return 0
 }
 
@@ -58,25 +59,28 @@ initialize_recyclebin() {
 # Parameters: None
 # Returns: 0 on success
 #################################################
-# TODO: review auto_cleanup() {
-# TODO: review     local retention_days=$(get_config "RETENTION_DAYS")
-# TODO: review     local cutoff_date=$(date --date="$retention_days days ago" "+%Y-%m-%d %H:%M:%S")
-# TODO: review     local temp_metadata="$METADATA_FILE.temp"
-# TODO: review     echo "# Recycle Bin Metadata" > "$temp_metadata"
-# TODO: review     echo $(join_by $METADATA_DELIMITER $METADATA_HEADER_FIELDS) >> "$temp_metadata"
-# TODO: review 
-# TODO: review     tail -n +3 "$METADATA_FILE" | while IFS="$METADATA_DELIMITER" read -r id original_name original_path deletion_date file_size file_type permissions owner; do
-# TODO: review         if [[ "$deletion_date" < "$cutoff_date" ]]; then
-# TODO: review             rm -rf "$FILES_DIR/$id"
-# TODO: review             echo "$(date "+%Y-%m-%d %H:%M:%S") - Auto-deleted: $ORIGINAL_NAME (ID: $id)" >> "$LOG_FILE"
-# TODO: review         else
-# TODO: review             echo $(join_by "$METADATA_DELIMITER" "$id" "$ORIGINAL_NAME" "$ORIGINAL_PATH" "$deletion_date" "$FILE_SIZE" "$FILE_TYPE" "$PERMISSIONS" "$OWNER") >> "$temp_metadata"
-# TODO: review         fi
-# TODO: review     done
-# TODO: review 
-# TODO: review     mv "$temp_metadata" "$METADATA_FILE"
-# TODO: review     return 0
-# TODO: review }
+auto_cleanup() {
+    local retention_days=$(get_config "RETENTION_DAYS")
+    local cutoff_date=$(date --date="$retention_days days ago" "+%Y-%m-%d %H:%M:%S")
+    local temp_metadata="$METADATA_FILE.temp"
+    local cleaned_files=0
+    echo "# Recycle Bin Metadata" > "$temp_metadata"
+    echo $(join_by $METADATA_DELIMITER $METADATA_HEADER_FIELDS) >> "$temp_metadata"
+
+    tail -n +3 "$METADATA_FILE" | while IFS="$METADATA_DELIMITER" read -r id original_name original_path deletion_date file_size file_type permissions owner; do
+        if [[ "$deletion_date" < "$cutoff_date" ]]; then
+            rm -rf "$FILES_DIR/$id"
+            echo "$(date "+%Y-%m-%d %H:%M:%S") - Auto-deleted: $ORIGINAL_NAME (ID: $id)" >> "$LOG_FILE"
+            cleaned_files=$((cleaned_files + 1))
+            get_log "auto_cleanup - File with ID: $file_id auto-cleaned from recycle bin."
+        else
+            echo $(join_by "$METADATA_DELIMITER" "$id" "$ORIGINAL_NAME" "$ORIGINAL_PATH" "$deletion_date" "$FILE_SIZE" "$FILE_TYPE" "$PERMISSIONS" "$OWNER") >> "$temp_metadata"
+        fi
+    done
+
+    get_log "auto_cleanup - Auto-cleanup completed. Files deleted: $cleaned_files."
+    return 0
+}
 
 
 #################################################
@@ -139,12 +143,17 @@ delete_file() {
         update_metadata "$metadata" || continue
         num_files_deleted=$((num_files_deleted + 1))
 
+        get_log "deleted_file - $original_name moved to recycle bin with ID: $id."
+
+
     done
     if ((num_files_deleted == 0)); then
         echo -e "${RED}No files were moved to recycle bin.${NC}"
         return 1
     fi
+
     echo -e "${GREEN}$num_files_deleted/$total_files file(s) moved to recycle bin successfully.${NC}"
+    return 0
 }
 
 #################################################
@@ -240,12 +249,14 @@ restore_file() {
     # Restore original owner
     chown "$owner" "$original_path" 2>/dev/null
     # Remove entry from metadata
-    grep -v "^$file_id$" "$METADATA_FILE" > "$METADATA_FILE.temp"
+    grep -v "$file_id" "$METADATA_FILE" > "$METADATA_FILE.temp"
     mv "$METADATA_FILE.temp" "$METADATA_FILE"
     [ $(grep -c "^$file_id$" "$METADATA_FILE") -ne 0 ] && {
         echo -e "${RED}Error: Failed to update metadata after restoring file${NC}"
         return 1
     }
+
+    get_log "restore_file - File with ID: $file_id restored to $original_path."
     echo -e "${GREEN}File restored to '$original_path' successfully.${NC}"
     return 0
 }
@@ -583,6 +594,18 @@ confirm_action() {
 }
 
 #################################################
+# Function: get_log
+# Description: (Helper) Get
+# Parameters: None
+# Returns: prints log 
+#################################################
+
+get_log () {
+    touch $LOG_FILE
+    echo "[$(date "+%Y-%m-%d %H:%M:%S")]" "$1" >> "$LOG_FILE"
+}
+
+#################################################
 # Function: get_current_size
 # Description: (Helper) Get current size of recycle bin
 # Parameters: None
@@ -595,7 +618,7 @@ get_current_size() {
         total_size=$((total_size + $file_size))
     done
     echo "$total_size"
-}
+}$@"
 
 #################################################
 # Function: get_config
