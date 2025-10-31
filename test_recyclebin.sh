@@ -38,6 +38,13 @@ echo -e "\n________Test 3: Deleting files________"
 ./recycle_bin.sh delete test_data/subdir
 echo -e "________Test 3 Complete________"
 
+echo -e "\n________Test 3.5: restore with rename "
+echo "Sample content 00000" > test_data/file_with_a_super_large_name.txt
+ID=$(./recycle_bin.sh list | grep "restore_test" | awk '{print $1}')
+./recycle_bin.sh restore "$ID"
+echo -e "\n________Test 3.5: Complete________"
+
+
 # Test 4: List contents
 echo -e "\n________Test 4: Listing recycle bin________"
 ./recycle_bin.sh list

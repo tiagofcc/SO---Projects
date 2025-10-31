@@ -55,13 +55,14 @@ The final solution supports functions such as delete, restore, empty, list and h
 ## References
     GitHub Copilot was used to write or rewrite pieces of code
     
-    StackOverflow post about getting Nth line from file - https://stackoverflow.com/questions/6022384/bash-tool-to-get-nth-line-from-a-file (26/10/2025)
-    StackOverflow post about function to join strings with delimiter - https://stackoverflow.com/questions/1527049/how-can-i-join-elements-of-a-bash-array-into-a-delimited-string#17841619 (26/10/2025)
-    (not used) Stack Exchange post about answering y automatically - https://unix.stackexchange.com/questions/512367/how-do-i-automatically-answer-y-in-bash-script (29/10/2025)
-    StackOverflow post about changing the characters of a string from undercase to upercase - https://pt.stackoverflow.com/questions/422494/como-passar-o-valor-de-uma-vari%C3%A1vel-para-mai%C3%BAscula-ou-minuscula 
+    StackOverflow post about getting Nth line from file - https://stackoverflow.com/questions/6022384/bash-tool-to-get-nth-line-from-a-file (30/10/2025)
+    StackOverflow post about function to join strings with delimiter - https://stackoverflow.com/questions/1527049/how-can-i-join-elements-of-a-bash-array-into-a-delimited-string#17841619 (30/10/2025)
+    (not used) Stack Exchange post about answering y automatically - https://unix.stackexchange.com/questions/512367/how-do-i-automatically-answer-y-in-bash-script (30/10/2025)
+    StackOverflow post about changing the characters of a string from lowercase to uppercase - https://pt.stackoverflow.com/questions/422494/como-passar-o-valor-de-uma-vari%C3%A1vel-para-mai%C3%BAscula-ou-minuscula (30/10/2025)
     Ask Ubuntu post about incrementing a variable - https://askubuntu.com/questions/385528/how-to-increment-a-variable-in-bash
+    GNU page on "Bash Conditional Expressions" - https://www.gnu.org/software/bash/manual/html_node/Bash-Conditional-Expressions.html (30/10/2025)
+    Bash Commands page about reading lines into multiple variables - https://bashcommands.com/bash-read-lines-into-multiple-variables (30/10/2025)
 
 
-
-    Reference manual (man) of the commands: echo, sed, tail, head
+    Reference manual (man) of the commands: echo, sed, tail, head, grep, bash, cut, 
 [Resources used]
