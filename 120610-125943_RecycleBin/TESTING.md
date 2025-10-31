@@ -1,4 +1,8 @@
 # Manual Testing
+### Author
+    120610 - João Pedro Martins Castro Silva (LEI)
+    125943 - Tiago Francisco Carvalho Costa (LEI)
+
 ## Test Case 1: Delete Single File 
  
 **Objective:** Verify that a single file can be deleted successfully 
