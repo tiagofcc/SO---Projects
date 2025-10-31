@@ -57,37 +57,48 @@ How to configure the configurations inside CONFIG_FILE:
 4. Change the values inside.
 
 ## Examples
-[Detailed usage examples with screenshots]
+### Help menu
+![Help menu](screenshots/readme_help.png "Help menu")
+### Delete operation
+![Delete operation](screenshots/readme_delete.png "Delete operation")
+### List operation
+![List operation](screenshots/readme_list.png "List operation")
+### Restore operation
+![Restore operation](screenshots/readme_restore.png "Restore operation")
+### Search operation
+![Search operation](screenshots/readme_search.png "Search operation")
+### Empty operation
+![Empty operation](screenshots/readme_empty.png "Empty operation")
 
 ## Known Issues
-1. Cannot restore files by name 
+1. Cannot restore files by name.
 Restoration is only possible using the unique ID assigned at deletion. There's no support for restoring by filename.
 
-2. Does not handle disk space issues
+2. Does not handle disk space issues.
 The system doesn’t check if there’s enough disk space before moving files to the recycle bin, which may cause failures.
 
-3. Does not validate all parameters and return codes
+3. Does not validate all parameters and return codes.
 Some functions lack proper checks for input validity and operation results, which can lead to unexpected behavior.
 
-4. No verification for long filenames
+4. No verification for long filenames.
 The system hasn’t been tested with extremely long filenames, which may cause issues depending on the filesystem.
 
-5. No verification for large files
+5. No verification for large files.
 Very large files might exceed limits or slow down operations, but the system doesn’t treat them differently.
 
-6. Does not treat symbolic links differently
+6. Does not treat symbolic links differently.
 Symbolic links are handled like regular files, which may result in unintended deletions or broken references.
 
-7. No check for restoring to read-only directories
+7. No check for restoring to read-only directories.
 If the original path is read-only, restoration may fail silently or without clear feedback.
 
-8. Does not check for corrupted metadata
+8. Does not check for corrupted metadata.
 Although the system recreates the metadata file if missing, it doesn’t validate its integrity if present.
 
-9. Does not handle all permission-denied errors
+9. Does not handle all permission-denied errors.
 Some permission issues may not be caught or reported properly, leading to silent failures.
 
-10. Concurrent operations may cause errors
+10. Concurrent operations may cause errors.
 The system isn’t designed for simultaneous access, which can lead to metadata corruption or race conditions.rs
 
 ## References
@@ -101,6 +112,5 @@ The system isn’t designed for simultaneous access, which can lead to metadata 
     Tratif (Blog) post about logging in Shell - https://blog.tratif.com/2023/01/09/bash-tips-1-logging-in-shell-scripts/
     GNU page on "Bash Conditional Expressions" - https://www.gnu.org/software/bash/manual/html_node/Bash-Conditional-Expressions.html (30/10/2025)
     Bash Commands page about reading lines into multiple variables - https://bashcommands.com/bash-read-lines-into-multiple-variables (30/10/2025)
-
 
     Reference manual (man) of the commands: echo, sed, tail, head, grep, bash, cut, date
