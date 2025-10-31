@@ -26,18 +26,13 @@ The final solution supports functions such as delete, restore, empty, list and h
     
     "./recycle_bin.sh delete <filename> <filename>" to delete one or more files or directories
 
-    "./recycle_bin.sh list" to print out all the files inside teh recycle bin
-    !!! FALTA --detailed !!!
-
+    "./recycle_bin.sh list" to print out all the files inside the recycle bin. Add "--detailed" if you want a more information about the files inside the recycle bin
 
     "./recycle_bin.sh restore <fileId>" to restore one file in the recycle bin
 
     "./recycle_bin.sh empty" to empty the recycle bin. Add "--force" and/or a <fileId> to skip confirmation or to empty only a specific file, respectively.
 
     "./recycle_bin.sh search <pattern>" to search for files in the recycle bin by matching their names against the specified pattern
-
-
-[How to use with examples]
 
 ## Features
 - [List of implemented features]
@@ -60,9 +55,9 @@ The final solution supports functions such as delete, restore, empty, list and h
     (not used) Stack Exchange post about answering y automatically - https://unix.stackexchange.com/questions/512367/how-do-i-automatically-answer-y-in-bash-script (30/10/2025)
     StackOverflow post about changing the characters of a string from lowercase to uppercase - https://pt.stackoverflow.com/questions/422494/como-passar-o-valor-de-uma-vari%C3%A1vel-para-mai%C3%BAscula-ou-minuscula (30/10/2025)
     Ask Ubuntu post about incrementing a variable - https://askubuntu.com/questions/385528/how-to-increment-a-variable-in-bash
+    Tratif (Blog) post about logging in Shell - https://blog.tratif.com/2023/01/09/bash-tips-1-logging-in-shell-scripts/
     GNU page on "Bash Conditional Expressions" - https://www.gnu.org/software/bash/manual/html_node/Bash-Conditional-Expressions.html (30/10/2025)
     Bash Commands page about reading lines into multiple variables - https://bashcommands.com/bash-read-lines-into-multiple-variables (30/10/2025)
 
 
-    Reference manual (man) of the commands: echo, sed, tail, head, grep, bash, cut, 
-[Resources used]
+    Reference manual (man) of the commands: echo, sed, tail, head, grep, bash, cut, date
