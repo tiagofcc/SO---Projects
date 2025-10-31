@@ -52,22 +52,17 @@
 
 ### Function descriptions
 
-initialize_recyclebin() - responsible for the configuration and preparation of the recycle bin system environment. It ensures that all essential directories and files are created and properly configured before use. It creates the RECYCLE_BIN_DIR, FILES_DIR, CONFIG_FILE, METADATA_FILE and configures them all.
+initialize_recyclebin() – Responsible for the configuration and preparation of the recycle bin system environment. It ensures that all essential directories and files are created and properly configured before use. It creates the RECYCLE_BIN_DIR, FILES_DIR, CONFIG_FILE, METADATA_FILE and configures them all.
 
-delete_file() - responsible for the moving (deleting) files or directories to the recycle bin and updates the metadata file with deleted file's information. This function can delete 1 or more files in one call and will skip files that cannot be accessed or would cause the recycle bin to exceed MAX_SIZE. Registers every operation in the log file and prints out the amount of files deleted.
+delete_file() – Responsible for moving (deleting) files or directories to the recycle bin and updating the metadata file with the deleted file's information. This function can delete one or more files in a single call and will skip files that cannot be accessed or would cause the recycle bin to exceed MAX_SIZE. It registers every operation in the log file and prints out the number of files deleted.
 
-list_recycled() - responsible for showing the files in the recycle bin, either in short or detailed mode. Checks for files in the files directory, read and present file's information and tells total number of files and amount of space occupied.
+list_recycled() – Responsible for showing the files in the recycle bin, either in short or detailed mode. It checks for files in the files directory, reads and presents file information, and reports the total number of files and the amount of space occupied.
 
-restore_file() - responsible for the restoration of files inside the recycle bin, using their Ids inside the metadata file. The restored file is sent to their original path location, and if there's no original path anymore, it creates the original location. After the restoration, it updates metadata, register the operation in the log file.
+restore_file() – Responsible for the restoration of files inside the recycle bin, using their IDs from the metadata file. The restored file is sent to its original path location, and if the original path no longer exists, it creates the original location. After the restoration, it updates the metadata and registers the operation in the log file.
 
-empty_recyclebin() - 
+empty_recyclebin() – Responsible for permanently deleting files inside the recycle bin. It can either empty the whole recycle bin (if not specified) or delete one file (specified by ID). It also has the "--force" option that skips confirmation when active.
 
-empty_recyclebin() - Permanently deletes all files in the recycle bin or a specific file by ID or name. Supports confirmation prompts and a --force mode for silent deletion.
+search_recycled() – Responsible for searching for files/directories inside the recycle bin based on a pattern given by the user. This pattern can be either the original name or path. There is a case-insensitive matching mode, invoked by typing "-i". If matches are found, it displays a table with the ID, name, deletion date, and size of each file; if not, it lets the user know that no matches were found.
 
-search_recycled() - responsible for searching for files/directories inside the recycle bin based on a pattern given by the user, this patter can either be the original name or path. There is the case-insensitive matching mode, invoked by typping "-i"
+display_help() – Responsible for guiding the user by printing a complete guide to the recycle bin system, explaining commands, required and optional parameters, practical examples, and notes on internal workings. It details every command and highlights notable behavior.
 
-search_recycled() - Searches the recycle bin metadata for files matching a given pattern (ID or partial name). Displays matching entries with basic metadata for user reference.
-
-auto_cleanup() - Automatically deletes files from the recycle bin that exceed the configured age (AUTO_CLEANUP_DAYS). Updates metadata and logs the cleanup summary including space freed.
-
-show_statistics() - Displays summary statistics about the recycle bin, including total items, total size, usage percentage, file type breakdown, deletion date range, and average file size.

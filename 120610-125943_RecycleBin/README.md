@@ -32,14 +32,29 @@ The final solution supports functions such as delete, restore, empty, list and h
 
     "./recycle_bin.sh empty" to empty the recycle bin. Add "--force" and/or a <fileId> to skip confirmation or to empty only a specific file, respectively.
 
-    "./recycle_bin.sh search <pattern>" to search for files in the recycle bin by matching their names against the specified pattern
+    "./recycle_bin.sh search <pattern>" to search for files in the recycle bin by matching their original names and paths, using REGEX, against the specified pattern
 
 ## Features
-- [List of implemented features]
-- [Mark optional features]
+- 1. Recycle Bin Initialization
+- 2. File Deletion
+- 3. Listing Contents
+- 4. File Restoration
+- 5. Search Functionality
+- 6. Permanent Deletion
+- 7. Help Guide
 
 ## Configuration
-[How to configure settings]
+The configuration is handled primarily through a file called CONFIG_FILE, which is created during the initialize_recyclebin() function. This file stores key settings that control how the recycle bin behaves.
+
+Default values of the CONFIG_FILE when initialize:
+MAX_SIZE=104857600           # Maximum total size allowed in bytes (100 MB)
+METADATA_DELIMITER=|         # Delimiter used in the metadata file
+
+How to configure the configurations inside CONFIG_FILE:
+1. Run any of the recycle_bin command;
+2. Go to the path where CONFIG_FILE is stored - $HOME/.recycle_bin/ ;
+3. Open CONFIG_FILE with any text editor;
+4. Change the values inside.
 
 ## Examples
 [Detailed usage examples with screenshots]
