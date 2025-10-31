@@ -2,6 +2,17 @@
     120610 - João Pedro Martins Castro Silva (LEI)
     125943 - Tiago Francisco Carvalho Costa (LEI)
 
+### System architecture diagram
+![System architecture diagram](diagrams/system_architecture.png "System architecture diagram")
+
+### Data flow diagrams
+#### Delete data flow
+![Delete data flow diagram](diagrams/delete_dataFlow.png "Delete data flow diagram")
+#### Restore data flow
+![Restore data flow diagram](diagrams/restore_dataFlow.png "Restore data flow diagram")
+#### Empty data flow
+![Empty data flow diagram](diagrams/empty_dataFlow.png "Empty data flow diagram")
+
 ### Metadata Schema Explanation
 
     The file metadata.db, located inside the .recycle_bin directory, is going to store all the information about the files inside the recycle bin.
@@ -70,3 +81,11 @@ search_recycled() – Responsible for searching for files/directories inside the
 
 display_help() – Responsible for guiding the user by printing a complete guide to the recycle bin system, explaining commands, required and optional parameters, practical examples, and notes on internal workings. It details every command and highlights notable behavior.
 
+### Flowcharts
+
+#### Delete flowchart
+![Delete flowchart](diagrams/Flowchart_delete.png "Delete flowchart")
+#### Restore flowchart
+![Restore flowchart](diagrams/Flowchart_restore.png "Restore flowchart")
+#### Empty flowchart
+![Empty flowchart](diagrams/Flowchart_empty.png "Empty flowchart")
