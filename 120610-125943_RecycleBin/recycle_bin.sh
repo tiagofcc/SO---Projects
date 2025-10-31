@@ -264,7 +264,7 @@ restore_file() {
 #################################################
 # Function: empty_recyclebin
 # Description: Permanently deletes all items
-# Parameters: None
+# Parameters: $@ - optional "--force" and <filename>
 # Returns: 0 on success
 #################################################
 empty_recyclebin() {
