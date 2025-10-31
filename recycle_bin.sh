@@ -15,7 +15,6 @@ METADATA_FILE="$RECYCLE_BIN_DIR/metadata.db"
 CONFIG_FILE="$RECYCLE_BIN_DIR/config"
 LOG_FILE="$RECYCLE_BIN_DIR/recyclebin.log"
 SCRIPT="$0"
-# TODO: review function parameters and return values
 
 # Color codes for output (optional)
 RED='\033[0;31m'
@@ -42,8 +41,6 @@ initialize_recyclebin() {
     [[ ! -d "$FILES_DIR" ]] && mkdir -p "$FILES_DIR"
     [[ ! -f "$CONFIG_FILE" ]] && {
         echo "MAX_SIZE=104857600" > "$CONFIG_FILE"  # 100 MB default
-        echo "RETENTION_DAYS=30" >> "$CONFIG_FILE" # 30 days default
-        echo "AUTO_CLEANUP_STATUS=ON" >> "$CONFIG_FILE"
         echo "METADATA_DELIMITER=|" >> "$CONFIG_FILE"
     }
     METADATA_DELIMITER=$(get_config "METADATA_DELIMITER")
@@ -53,7 +50,6 @@ initialize_recyclebin() {
     }
 
     [[ ! -f "$LOG_FILE" ]] && log "initialize_recyclebin - Recycle Bin initialized."
-    #[[ $(get_config "AUTO_CLEANUP_STATUS") == "ON" ]] && auto_cleanup 2> /dev/null
     return 0
 }
 
@@ -120,7 +116,6 @@ delete_file() {
         return 1
     fi
     echo -e "${GREEN}$num_files_deleted/$total_files file(s) moved to recycle bin successfully.${NC}"
-    check_quota
     return 0
 }
 
@@ -413,7 +408,7 @@ NOTES:
             Directory: $RECYCLE_BIN_DIR
             Files area: $FILES_DIR
             Configuration file: $CONFIG_FILE
-            Key config values: MAX_SIZE (bytes), RETENTION_DAYS (days), AUTO_CLEANUP_STATUS (ON/OFF)
+            Key config values: MAX_SIZE (bytes), METADATA_DELIMITER (character)
 
 Behavior highlights:
     - 'delete' will skip files that cannot be accessed or would cause the recycle bin to exceed MAX_SIZE.
@@ -428,62 +423,6 @@ EOF
 #=^=^=^=^=^=^=^=^=^=^=^=^=^=^=^=^=^=^=^=^=^=^=^=^=^=^=^=^=^=^=^=^=^=^=^=^=^=^=^#
 #                              End Main Functions                              #
 #==============================================================================#
-
-#==============================================================================#
-#                              Optional Functions                              #
-#=v=v=v=v=v=v=v=v=v=v=v=v=v=v=v=v=v=v=v=v=v=v=v=v=v=v=v=v=v=v=v=v=v=v=v=v=v=v=v#
-
-#####################################################################
-# Function: auto_cleanup
-# Description: Automatically deletes files older than RETENTION_DAYS
-# Parameters: None
-# Returns: 0 on success
-#####################################################################
-auto_cleanup() {
-    local retention_days=$(get_config "RETENTION_DAYS")
-    local cutoff_date=$(date --date="$retention_days days ago" "+%Y-%m-%d %H:%M:%S")
-    local temp_metadata="$METADATA_FILE.temp"
-    local cleaned_files=0
-    echo "# Recycle Bin Metadata" > "$temp_metadata"
-    echo $(join_by $METADATA_DELIMITER $METADATA_HEADER_FIELDS) >> "$temp_metadata"
-
-    while IFS="$METADATA_DELIMITER" read -r id original_name original_path deletion_date file_size file_type permissions owner; do
-        if [[ "$deletion_date" < "$cutoff_date" ]] || ! check_quota; then
-            echo -e "WARNING: Auto-deleting file: $original_name (ID: $id), deleted on $deletion_date. "
-            confirm_action && rm -rf "$FILES_DIR/$id" || {
-                echo -e "${YELLOW}Auto-deletion of file ID: $id cancelled by user.${NC}"
-                continue
-            }
-            echo "$(date "+%Y-%m-%d %H:%M:%S") - Auto-deleted: $original_name (ID: $id)" >> "$LOG_FILE"
-            ((cleaned_files++))
-            log "auto_cleanup - File with ID: $file_id auto-cleaned from recycle bin."
-        else
-            echo $(join_by "$METADATA_DELIMITER" "$id" "$original_name" "$original_path" "$deletion_date" "$FILE_SIZE" "$FILE_TYPE" "$PERMISSIONS" "$OWNER") >> "$temp_metadata"
-        fi
-    done < <(tail -n +3 "$METADATA_FILE")
-
-    log "auto_cleanup - Auto-cleanup completed. Files deleted: $cleaned_files."
-    return 0
-}
-
-#################################################
-# Function: check_quota
-# Description: Checks if recycle bin exceeds MAX_SIZE and performs auto-cleanup if necessary
-# Parameters: None
-# Returns: 1 if exceeds quota, 0 otherwise
-##################################################
-check_quota() {
-    local max_size=$(get_config "MAX_SIZE")
-    local current_size=$(get_current_size)
-
-    (( current_size <= max_size )) && return 0;
-    echo -e "${YELLOW}Warning: Recycle bin size exceeds maximum allowed size. Performing auto-cleanup...${NC}"
-    return 1
-}
-
-#=^=^=^=^=^=^=^=^=^=^=^=^=^=^=^=^=^=^=^=^=^=^=^=^=^=^=^=^=^=^=^=^=^=^=^=^=^=^=^=^=^#
-#                              End Optional Functions                              #
-#==================================================================================#
 
 #============================================================================#
 #                              Helper Functions                              #
