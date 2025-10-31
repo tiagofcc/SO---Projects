@@ -60,7 +60,35 @@ How to configure the configurations inside CONFIG_FILE:
 [Detailed usage examples with screenshots]
 
 ## Known Issues
-[Any limitations or bugs]
+1. Cannot restore files by name 
+Restoration is only possible using the unique ID assigned at deletion. There's no support for restoring by filename.
+
+2. Does not handle disk space issues
+The system doesn’t check if there’s enough disk space before moving files to the recycle bin, which may cause failures.
+
+3. Does not validate all parameters and return codes
+Some functions lack proper checks for input validity and operation results, which can lead to unexpected behavior.
+
+4. No verification for long filenames
+The system hasn’t been tested with extremely long filenames, which may cause issues depending on the filesystem.
+
+5. No verification for large files
+Very large files might exceed limits or slow down operations, but the system doesn’t treat them differently.
+
+6. Does not treat symbolic links differently
+Symbolic links are handled like regular files, which may result in unintended deletions or broken references.
+
+7. No check for restoring to read-only directories
+If the original path is read-only, restoration may fail silently or without clear feedback.
+
+8. Does not check for corrupted metadata
+Although the system recreates the metadata file if missing, it doesn’t validate its integrity if present.
+
+9. Does not handle all permission-denied errors
+Some permission issues may not be caught or reported properly, leading to silent failures.
+
+10. Concurrent operations may cause errors
+The system isn’t designed for simultaneous access, which can lead to metadata corruption or race conditions.rs
 
 ## References
     GitHub Copilot was used to write or rewrite pieces of code

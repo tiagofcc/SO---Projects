@@ -1,5 +1,14 @@
 #!/bin/bash
 
+#################################################
+# Linux Recycle Bin Simulation
+# Author: João Pedro Silva -120610
+# Author: Tiago Francisco Carvalho Costa - 125943
+# Date: 2025-10-31
+# Description: Shell-based recycle bin system
+# Version: 1.0
+#################################################
+
 # Test Suite for Recycle Bin System
 
 # Global Configuration

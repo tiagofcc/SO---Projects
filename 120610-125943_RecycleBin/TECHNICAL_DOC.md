@@ -1,3 +1,7 @@
+### Author
+    120610 - João Pedro Martins Castro Silva (LEI)
+    125943 - Tiago Francisco Carvalho Costa (LEI)
+
 ### Metadata Schema Explanation
 
     The file metadata.db, located inside the .recycle_bin directory, is going to store all the information about the files inside the recycle bin.
